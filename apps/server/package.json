@@ -1,0 +1,31 @@
+{
+  "name": "@app/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "route:make": "tsx ./src/router/routes-one/make.ts",
+    "tsc": "rimraf build && pnpm route:make && tsc && tsc-alias",
+    "dev": "tsx src/index.ts",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pkg/types": "workspace:*",
+    "@m170/fastify": "^2.0.12",
+    "@m170/logics": "^1.0.43",
+    "@m170/sql": "^2.0.20",
+    "@m170/types": "^1.0.11",
+    "@m170/utils": "^2.2.4",
+    "@vue/reactivity": "^3.4.15",
+    "docx": "^8.0.4",
+    "dotenv": "^16.3.1",
+    "pino": "^8.17.2",
+    "tslib": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.9",
+    "tsc-alias": "^1.8.10",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}
