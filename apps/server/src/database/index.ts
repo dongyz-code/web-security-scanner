@@ -3,7 +3,6 @@ import { MEDO_ENV } from '../configs/static-conf.js';
 import { TransactionQuery, initTablesLogic, CreateOptSource } from '@m170/logics/tables-pgsql';
 import { baseTableModel } from './models.js';
 import { arrChunk, arrObject, getKeys } from '@m170/utils/node';
-import { uuidMd5 } from '../configs/pkg.js';
 import { logger } from '../configs/logs.js';
 import { basePgOpts, MODEL } from './type.js';
 
@@ -11,7 +10,7 @@ import type { Env } from '../types/index.js';
 
 /** 获取表前缀 */
 function getTablePrefix(_: Env = MEDO_ENV) {
-  const PREFIX = `KYC_${_ === 'default' ? '' : `${_}_`}`.toUpperCase();
+  const PREFIX = `wsc_${_ === 'default' ? '' : `${_}_`}`.toLocaleLowerCase();
   return PREFIX;
 }
 
@@ -63,12 +62,6 @@ export function getEnvTables(env: Env) {
     'name'
   ) as Record<Table, string>;
 }
-
-/** SQL 规则 */
-export const sqlRules = {
-  /** 生成角色ID */
-  role_id: () => uuidMd5(),
-};
 
 /**
  * 数据更新相关，先在新表插入数据，最后删除重命名在一个事务完成
