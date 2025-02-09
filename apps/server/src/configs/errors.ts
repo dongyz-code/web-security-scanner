@@ -110,9 +110,7 @@ const ROOT_ERROR_CODE: Partial<Record<ROOT_ERROR_KEY, string>> = {
 };
 
 /** 获取错误的响应码/消息 */
-export const getRespErrorCodeMsg = (
-  msg: LiteralUnion<ROOT_ERROR_KEY, string>,
-) => {
+export const getRespErrorCodeMsg = (msg: LiteralUnion<ROOT_ERROR_KEY, string>) => {
   const cVal = (msg ?? '') as ROOT_ERROR_KEY;
   let code = '500';
 

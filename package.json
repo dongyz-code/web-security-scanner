@@ -7,7 +7,7 @@
     "turbo": "turbo",
     "dev:web": "turbo dev --filter=./apps/client",
     "dev:server": "turbo dev --filter=./apps/server",
-    "lint": "turbo lint"
+    "formatter": "prettier --write ."
   },
   "devDependencies": {
     "@types/node": "^20.17.17",

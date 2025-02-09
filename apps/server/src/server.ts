@@ -9,14 +9,12 @@ import {
 } from './configs/index.js';
 import { getRoutes, callback } from './router/index.js';
 import { tableHealthCheck } from './database/index.js';
-import { IS_AWS, MEDO_ENV, IS_DOCKER, REDIS_HOST, REDIS_PORT } from './configs/index.js';
+import { IS_AWS, IS_DOCKER } from './configs/index.js';
 
 console.info('CONF:', {
   IS_AWS,
   IS_DOCKER,
-  MEDO_ENV,
-  ES_ORIGIN: ROOT_CONF.es?.host,
-  RD_ORIGIN: `${REDIS_HOST}:${REDIS_PORT}`,
+  MEDO_ENV: ROOT_CONF.MEDO_ENV,
 });
 
 async function createServer() {
