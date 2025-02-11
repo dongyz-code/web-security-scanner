@@ -1,4 +1,6 @@
-import puppeteer from 'puppeteer';
+/** 文件弃用 */
+
+import puppeteer, { LaunchOptions } from 'puppeteer';
 import genericPool from 'generic-pool';
 
 export type PuppeteerPoolOptions = {
@@ -78,3 +80,29 @@ export class PuppeteerPool {
     return this.pool.release(instance);
   }
 }
+
+const launchOption: LaunchOptions = {
+  headless: true,
+  args: [
+    '--disable-gpu',
+    '--disable-dev-shm-usage',
+    '--disable-web-security',
+    /** 关闭 XSS Auditor */
+    '--disable-xss-auditor', //
+    '--no-zygote',
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    /** 允许不安全内容 */
+    '--allow-running-insecure-content',
+    '--disable-webgl',
+    '--disable-popup-blocking',
+    /** 配置代理 */
+    // '--proxy-server=http://127.0.0.1:8080',
+  ],
+};
+
+export const puppeteerPool = new PuppeteerPool({
+  min: 1,
+  max: 10,
+  puppeteerArgs: launchOption,
+});

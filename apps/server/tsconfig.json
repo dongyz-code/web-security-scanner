@@ -10,7 +10,9 @@
     "removeComments": true,
     "noImplicitOverride": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
+    "types": ["node"],
     "paths": {
       "@/*": ["src/*"]
     }
