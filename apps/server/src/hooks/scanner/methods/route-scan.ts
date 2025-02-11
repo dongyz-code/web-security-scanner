@@ -3,7 +3,7 @@ import { arrObjectCluster, fse } from '@m170/utils/node';
 import { getClusterLaunch } from '../puppeteer.js';
 import { BloomFilter } from '@/utils/index.js';
 import { STATIC_DATA_DIR, logger } from '@/configs/index.js';
-import { getPageSrcAndHref, isStaticPath, filterLinks } from '../utils.js';
+import { getPageSrcAndHref, isStaticPath, filterLinks, parseLink } from '../utils.js';
 import { checkHeaders } from './check.js';
 
 import type { Page } from 'puppeteer';
@@ -82,8 +82,6 @@ export async function launchWebBrowser({
       // console.log('response', request.url());
       /** 拦截图片请求, 返回假的图片资源 */
 
-      const url = request.url();
-
       if (request.resourceType() === 'image') {
         request.respond({
           contentType: 'image/png',
@@ -95,6 +93,12 @@ export async function launchWebBrowser({
     });
 
     page.on('response', async (response) => {
+      const url = response.url();
+      if (!parseLink(url, target)) {
+        return;
+      }
+
+      console.log('url', url);
       const checks = await checkHeaders(response);
       checks.forEach((check) => {
         const { v_type, pass, url } = check;

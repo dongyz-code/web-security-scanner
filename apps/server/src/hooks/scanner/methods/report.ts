@@ -24,6 +24,7 @@ import {
 
 import { helperDocxOptions, type ScanResultMap } from '../type.js';
 import type {
+  FileChild,
   IParagraphOptions,
   IParagraphStyleOptions,
   ISectionOptions,
@@ -136,7 +137,7 @@ async function generateCatalog() {
       }),
       new TableOfContents('目录', {
         hyperlink: true,
-        // headingStyleRange: "1-2",
+        headingStyleRange: '1-2',
       }),
     ],
   };
@@ -162,7 +163,7 @@ export function generateTable({
   const Header = new TableRow({
     children: columns.map((column) => {
       return new TableCell({
-        children: [new Paragraph({ text: column.label })],
+        children: [new Paragraph(column.label)],
         width: {
           size: column.width,
           type: WidthType.PERCENTAGE,
@@ -178,7 +179,7 @@ export function generateTable({
         const list = value.split('\n').filter((item) => item.trim());
 
         return new TableCell({
-          children: [...list.map((item) => new Paragraph({ text: item }))],
+          children: list.map((item) => new Paragraph(item)),
           width: {
             size: column.width,
             type: WidthType.PERCENTAGE,
@@ -188,21 +189,21 @@ export function generateTable({
     });
   });
 
+  const rows: TableRow[] = [];
+
   if (showHeader) {
-    return new Table({
-      rows: [Header, ...Body],
-    });
-  } else {
-    return new Table({
-      rows: [...Body],
-    });
+    rows.push(Header);
   }
+
+  rows.push(...Body);
+
+  return new Table({ rows, width: { size: '100%', type: WidthType.PERCENTAGE } });
 }
 
 export async function generateDocument(scanRes: ScanResultMap[]) {
   const webSecurityLibrary = arrObject(WEB_SECURITY_LIBRARY, 'v_type');
   const summaries: Paragraph[] = [];
-  const details: Paragraph[] = [];
+  const details: FileChild[] = [];
 
   scanRes.forEach((item) => {
     const { v_type, failCount, failUrls, headers } = item;
@@ -214,13 +215,14 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
       summaries.push(new Paragraph({ children: [new TextRun({ text: `${name}` })] }));
     }
 
-    const title = `[${status}] ${risk} ${name}`;
+    const title = `[${status}] ${name}`;
     details.push(
       new Paragraph({
         text: title,
         heading: HeadingLevel.HEADING_2,
         spacing: {
           after: HEADING_SPACING,
+          before: HEADING_SPACING,
         },
       })
     );
@@ -232,13 +234,13 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
       },
       {
         name: status,
-        description: '',
+        description: '发',
       },
     ];
 
     const tableColumns: TableColumn[] = [
-      { label: '漏洞说明', key: 'description', width: '30%' },
-      { label: '漏洞说明', key: 'description', width: '70%' },
+      { label: '漏洞说明', key: 'name', width: '30%' },
+      { label: '漏洞', key: 'description', width: '70%' },
     ];
 
     const TableInstance = generateTable({
@@ -247,11 +249,7 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
       showHeader: false,
     });
 
-    details.push(
-      new Paragraph({
-        children: [TableInstance],
-      })
-    );
+    details.push(TableInstance);
 
     // Object.entries(headers).forEach(([key, value]) => {
     //   header.push({ text: key });
@@ -260,23 +258,23 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
   });
 
   return {
+    properties: {},
     children: [
       new Paragraph({
         text: '3.问题总览',
         heading: HeadingLevel.HEADING_1,
         spacing: {
           after: HEADING_SPACING,
+          before: HEADING_SPACING,
         },
       }),
-      new Paragraph({
-        children: summaries,
-      }),
-
+      ...summaries,
       new Paragraph({
         text: '4.测试用例',
         heading: HeadingLevel.HEADING_1,
         spacing: {
           after: HEADING_SPACING,
+          before: HEADING_SPACING,
         },
       }),
       ...details,
@@ -382,6 +380,7 @@ export async function generateWord(scanRes: ScanResultMap[]) {
   ]);
 
   const doc = new Document({
+    creator: '脉络洞察',
     styles,
     features: {
       updateFields: true,

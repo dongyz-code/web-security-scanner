@@ -6,7 +6,7 @@ export const WEB_SECURITY_LIBRARY = [
     v_type: 'MISSING_HSTS',
     risk: '中风险',
     check_headers: ['Strict-Transport-Security'],
-    name: '缺少HTTP严格传输安全策略 Missing HTTP Strict Transport Security Policy',
+    name: '缺少HTTP严格传输安全策略',
     category: 'security-header',
     description: `HTTP 严格传输安全策略（HTTP Strict Transport Security，简称 HSTS）是一种网络安全机制，用来保护网站免受某些类型的中间人攻击，特别是 SSL 剥离攻击。
 HSTS 是一种由服务器端设置的响应头（Strict-Transport-Security），它告诉浏览器在未来的通信中只通过 HTTPS 与该服务器通信，即使用户点击了一个不安全的 HTTP 链接。这可以防止攻击者通过将 HTTPS 流量降级到 HTTP 来窃取敏感信息。
@@ -33,7 +33,7 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
     v_type: 'MISSING_HTTPONLY_COOKIE',
     risk: '中风险',
     check_headers: ['set-cookie'],
-    name: '检测到的没有 HttpOnly 标志的 Cookie 实例 Cookie Without HttpOnly Flag Detected Instances',
+    name: '检测到的没有 HttpOnly 标志的 Cookie 实例',
     category: 'security-header',
     description: `这个测试用例指出在对Web应用进行渗透测试时，测试人员发现应用设置的cookies没有使用HttpOnly标志。HttpOnly是一个cookie的属性，当设置后，这个cookie不会被JavaScript的document.cookie API访问。这可以减少跨站脚本攻击（XSS）的风险，因为即使攻击者能够通过XSS漏洞注入恶意脚本，该脚本也无法读取带有HttpOnly属性的cookie。`,
     validate: (response: HTTPResponse) => {
@@ -50,7 +50,7 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
     v_type: 'MISSING_SECURE_COOKIE',
     risk: '中风险',
     check_headers: ['set-cookie'],
-    name: '缺少Secure标志的Cookie实例 Cookie Without Secure Flag Detected Instances',
+    name: '缺少Secure标志的Cookie实例',
     category: 'security-header',
     description: `“Cookie Without Secure Flag Detected”（检测到未设置安全标志的Cookie）是一个常见的测试案例。这通常是指HTTP响应中的Set-Cookie头缺少了Secure属性。下面我将详细解释这一概念以及它的重要性。
 安全标志 (Secure Flag) 的意义
@@ -73,7 +73,7 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
     v_type: 'MISSING_X-Content-Type-Options',
     risk: '中风险',
     check_headers: ['x-content-type-options'],
-    name: '缺少X-Content-Type-Options头实例 Missing X-Content-Type-Options Header Instances',
+    name: '缺少X-Content-Type-Options头实例',
     category: 'security-header',
     description: `X-Content-Type-Options 是一个用于增加Web应用安全性的HTTP响应头。它目前只有一个有效的值：nosniff。当设置为 nosniff 时，它告诉浏览器不要尝试猜测响应内容的类型（即MIME类型），而是应该严格使用服务器所声明的MIME类型来处理响应内容。
 为什么这个标头很重要？
@@ -83,10 +83,8 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
 
 如何设置 X-Content-Type-Options 响应头？
 要在Web应用中设置 X-Content-Type-Options 响应头，你可以在服务器的配置中添加以下指令：
-对于Apache服务器，可以在 .htaccess 文件或服务器配置文件中添加：
-Header set X-Content-Type-Options "nosniff"
-对于Nginx服务器，可以在配置文件中添加：
-add_header X-Content-Type-Options "nosniff";
+对于Apache服务器，可以在 .htaccess 文件或服务器配置文件中添加： Header set X-Content-Type-Options "nosniff"
+对于Nginx服务器，可以在配置文件中添加： add_header X-Content-Type-Options "nosniff";
 对于IIS服务器，可以通过IIS管理器设置响应头。
 对于Node.js等Web应用框架，可以在应用的中间件中设置这个响应头。
 `,
@@ -99,7 +97,7 @@ add_header X-Content-Type-Options "nosniff";
     v_type: 'MISSING_CSP',
     risk: '中风险',
     check_headers: ['content-security-policy'],
-    name: '缺少CSP头实例 Missing CSP Header Instances',
+    name: '缺少CSP头实例',
     category: 'security-header',
     description: `什么是内容安全策略（CSP）？
 内容安全策略是一个额外的安全层，用于减少跨站脚本（XSS）和其他某些类型的攻击。通过 Content-Security-Policy HTTP响应头，网站管理员可以指定哪些动态资源（如JavaScript、CSS、图片等）是允许加载的，以及这些资源可以从哪些来源请求。
@@ -124,7 +122,7 @@ Content-Security-Policy: default-src 'self'; script-src 'self' https://trusted.c
     v_type: 'MISSING_CACHE_CONTROL',
     risk: '中风险',
     check_headers: ['cache-control'],
-    name: `缺少“缓存控制”标头实例 Missing 'Cache-Control' Header Instances`,
+    name: `缺少“缓存控制”标头实例`,
     category: 'security-header',
     description: `"缺少 Cache-Control 头文件"（Missing 'Cache-Control' Header）是一个Web安全和性能测试用例，它指出Web应用在HTTP响应中没有设置 Cache-Control 响应头。这个响应头用于控制响应的缓存行为，对保护敏感信息和优化网站性能都非常重要。
 什么是 Cache-Control 响应头？
@@ -138,14 +136,10 @@ Cache-Control 是一个用于Web缓存控制的HTTP响应头。它提供一种�
 
 如何设置 Cache-Control 响应头？
 要在Web应用中设置 Cache-Control 响应头，你可以在服务器的配置中添加相应的指令。例如：
-禁止缓存任何内容：
-Cache-Control: no-store
-允许缓存，但必须重新验证：
-Cache-Control: no-cache
-设置内容在缓存中的最长存储时间：
-Cache-Control: max-age=3600
-允许公共缓存但禁止转换内容：
-Cache-Control: public, no-transform
+禁止缓存任何内容：Cache-Control: no-store
+允许缓存，但必须重新验证：Cache-Control: no-cache
+设置内容在缓存中的最长存储时间：Cache-Control: max-age=3600
+允许公共缓存但禁止转换内容：Cache-Control: public, no-transform
 
 检查Web应用的HTTP响应头部，以确定是否设置了 Cache-Control 响应头。如果发现缺少这个响应头，这可能意味着：
 •	敏感页面或数据可能被客户端或中间代理缓存，增加了信息泄露的风险。
