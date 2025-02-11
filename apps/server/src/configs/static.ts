@@ -21,6 +21,8 @@ export const STATIC_DATA_DIR = join(SERVER_DIR, 'static-data');
 export const FILES_DIR = join(SERVER_DIR, 'static');
 /** 日志文件路径 */
 export const LOG_DIR = join(FILES_DIR, 'logs');
+/** 报告文件路径 */
+export const REPORT_DIR = join(FILES_DIR, 'report');
 /** 临时文件路径 */
 export const TEMP_DIR = join(FILES_DIR, 'temp');
 
