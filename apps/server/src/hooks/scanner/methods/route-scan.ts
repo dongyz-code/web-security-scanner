@@ -1,15 +1,13 @@
 import { join } from 'path';
-import { arrObjectCluster, fse } from '@m170/utils/node';
+import { fse } from '@m170/utils/node';
 import { getClusterLaunch } from '../puppeteer.js';
 import { BloomFilter } from '@/utils/index.js';
 import { STATIC_DATA_DIR, logger } from '@/configs/index.js';
-import { getPageSrcAndHref, isStaticPath, filterLinks, parseLink } from '../utils.js';
+import { getPageSrcAndHref, filterLinks, parseLink } from '../utils.js';
 import { checkHeaders } from './check.js';
-
-import type { Page } from 'puppeteer';
-import type { LaunchForm } from '@/types/index.js';
-import { ScanResult } from '../type.js';
 import { generateWord } from './report.js';
+
+import type { LaunchForm } from '@/types/index.js';
 
 /**
  * 路由扫描
@@ -123,12 +121,6 @@ export async function launchWebBrowser({
           scanResultMap[v_type].failCount++;
         }
       });
-
-      // if (contentType?.includes('application/json') || url.includes('/api/')) {
-      //   console.log('json', url);
-      //   const json = await response.json();
-      //   console.log('json', json);
-      // }
     });
 
     page.on('dialog', (dialog) => {
