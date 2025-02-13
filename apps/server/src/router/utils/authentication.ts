@@ -55,4 +55,5 @@ export function authentication({ body, url, headers }: Req) {
   // } catch (error) {
   //   return new Error(ROOT_ERROR['身份认证失败']);
   // }
+  return null;
 }

@@ -3,11 +3,14 @@
   "version": "0.0.0",
   "private": true,
   "author": "yuzhong.dong@medomino.com",
+  "type": "module",
   "scripts": {
     "turbo": "turbo",
     "dev:web": "turbo dev --filter=./apps/client",
     "dev:server": "turbo dev --filter=./apps/server",
-    "formatter": "prettier --write ."
+    "formatter": "prettier --write .",
+    "build:server": "git pull && bash ./docker/build-server.sh",
+    "build:web": "git pull && bash ./docker/build-web.sh"
   },
   "devDependencies": {
     "@types/node": "^20.17.17",

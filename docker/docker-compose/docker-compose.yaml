@@ -1,0 +1,28 @@
+networks:
+  wsc-network-app: {}
+services:
+  server:
+    image: wsc-server:1.0.0
+    restart: always
+    volumes:
+      - ./data/server/static:/app/static
+      - ./conf:/app/.conf
+    networks:
+      wsc-network-app:
+        aliases:
+          - server
+    environment:
+      NODE_ENV: production
+      MEDO_ENV: default
+      MEDO_ENV_CONF: "01"
+  nginx:
+    image: wsc-nginx:1.0.0
+    restart: always
+    volumes:
+      - ./data/server/static:/app/static
+    networks:
+      - wsc-network-app
+    ports:
+      - 80:80
+    depends_on:
+      - server

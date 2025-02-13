@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "route:make": "tsx ./src/router/routes-one/make.ts",
-    "tsc": "rimraf build && pnpm route:make && tsc && tsc-alias",
+    "build": "rimraf build && pnpm route:make && tsc && tsc-alias",
     "dev": "tsx src/index.ts",
     "lint": "tsc --noEmit"
   },

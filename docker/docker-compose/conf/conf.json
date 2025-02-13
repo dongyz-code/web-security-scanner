@@ -1,0 +1,16 @@
+{
+  "pg": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "postgres",
+    "path": "data-harmony",
+    "user": "postgres",
+    "password": "123456"
+  },
+  "administrator": {
+    "user_id": "medomino",
+    "password": "medomino@",
+    "nickname": "medomino",
+    "mail": "medomino@medomino.com"
+  }
+}
