@@ -1,14 +1,12 @@
-import { join } from 'path';
-import { fse } from '@m170/utils/node';
 import { getClusterLaunch } from '../puppeteer.js';
 import { BloomFilter } from '@/utils/index.js';
-import { STATIC_DATA_DIR, logger } from '@/configs/index.js';
-import { getPageSrcAndHref, filterLinks, parseLink } from '../utils.js';
+import { logger } from '@/configs/index.js';
+import { parseLink } from '../utils.js';
 import { checkHeaders } from './check.js';
 import { generateWord } from './report.js';
+import { handleRecord } from './record.js';
 
 import type { LaunchForm } from '@/types/index.js';
-import { handleRecord } from './record.js';
 
 /**
  * 路由扫描
@@ -19,14 +17,9 @@ import { handleRecord } from './record.js';
  * @param form 扫描参数
  */
 
-export async function launchWebBrowser({
-  target,
-  scanSpeed = 10,
-  headers = {},
-  localStorages = [],
-  recordJson,
-  reportInfo,
-}: LaunchForm) {
+export async function launchWebBrowser(launchForm: LaunchForm) {
+  let { target, scanSpeed = 10, headers = {}, localStorages = [], recordJson } = launchForm;
+
   /** 收集的网站路径 */
   const urls: string[] = [];
   /** 漏洞扫描 */
@@ -138,7 +131,10 @@ export async function launchWebBrowser({
   await cluster.idle();
 
   // console.log('scanResultMap', scanResultMap);
-  await generateWord(Object.values(scanResultMap), reportInfo);
+  await generateWord({
+    scanRes: Object.values(scanResultMap),
+    launchForm,
+  });
 
   await cluster.close();
 }

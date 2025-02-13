@@ -1,10 +1,12 @@
 import { LoginController } from './login/index';
+import { MainController } from './main/index';
 
 export * from './_';
 
 export type API = {
   prefix: '/api';
   routes: {
+    '/main': MainController;
     '/login': LoginController;
   };
 };

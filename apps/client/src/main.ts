@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
-import './style.css';
+import { usePlugins } from './plugins';
 import App from './App.vue';
+import './styles/index.css';
 
-createApp(App).mount('#app');
+createApp(App).use(usePlugins).mount('#app');

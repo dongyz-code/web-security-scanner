@@ -19,7 +19,6 @@ import {
 } from 'docx';
 import {
   WEB_SECURITY_LIBRARY,
-  REPORT_TEMPLATE,
   REPORT_DEFAULT_INFO,
   RISK_LEVEL_MAP,
   RiskLevel,
@@ -34,7 +33,7 @@ import type {
   ISectionOptions,
   IStylesOptions,
 } from 'docx';
-import type { ReportInfo } from '@/types/index.js';
+import type { LaunchForm } from '@/types/index.js';
 
 enum SPACING {
   HEADING_SPACING = 480,
@@ -192,7 +191,7 @@ function getRiskTotal(riskLevelCount: Record<RiskLevel, number>): RiskLevel {
  * 生成封面
  * @returns
  */
-async function generateCover({ reportName, version }: ReportInfo) {
+async function generateCover({ report_name, version }: LaunchForm) {
   const HOME: ISectionOptions = {
     /** 首页不算页码 */
     properties: {
@@ -207,7 +206,7 @@ async function generateCover({ reportName, version }: ReportInfo) {
       default: new Header({
         children: [
           new Paragraph({
-            children: [new TextRun({ text: `${reportName} ${version}` })],
+            children: [new TextRun({ text: `${report_name} ${version}` })],
             thematicBreak: true,
           }),
         ],
@@ -217,7 +216,7 @@ async function generateCover({ reportName, version }: ReportInfo) {
       new Paragraph({
         children: [
           new TextRun({
-            text: reportName,
+            text: report_name,
             size: TEXT_SIZE.H1,
             bold: true,
           }),
@@ -284,7 +283,7 @@ async function generateCover({ reportName, version }: ReportInfo) {
                 width: { size: '20%' },
               }),
               new TableCell({
-                children: [baseTableParagraph(reportName)],
+                children: [baseTableParagraph(report_name)],
                 width: { size: '30%' },
                 columnSpan: 3,
               }),
@@ -483,7 +482,7 @@ async function generateCatalog() {
   return CATALOG;
 }
 
-async function generateDocument(scanRes: ScanResultMap[], reportInfo: ReportInfo) {
+async function generateDocument(scanRes: ScanResultMap[], launchForm: LaunchForm) {
   const webSecurityLibrary = arrObject(WEB_SECURITY_LIBRARY, 'v_type');
   const summaries: { index: string; name: string; result: string }[] = [];
   const details: FileChild[] = [];
@@ -585,11 +584,19 @@ async function generateDocument(scanRes: ScanResultMap[], reportInfo: ReportInfo
         },
       }),
       ...generateHighlightParagraph({
-        text: REPORT_TEMPLATE.SUMMARY_TEXT,
+        text: `
+  脉络洞察安全服务团队于{{start_date}}至{{end_date}}，对{{target_system}}进行了全面的渗透测试。测试手段主要通过模拟黑客攻击手法对{{target_system}}开展测试并发现安全隐患；本次安全测试共发现了{{risk_total}}个安全漏洞，按漏洞风险分布为：高风险{{risk_high}}个，中风险{{risk_medium}}个，低风险{{risk_low}}个。
+  {{risk_total_text}}
+  从本次渗透测试结果来看，{{target_system}}在安全防护方面达到高级别。
+  建议继续保持，进一步提高网络安全防护和管理水平：
+  a.	在安全防护方面，建议完善安全基线并全面进行安全加固；加强办公终端管控，完善办公网络数据安全保护措施。
+  b.	在威胁发现方面，建议进一步加强APT攻击检测和威胁监测能力，加强日常安全检查力度，完善等级保护和风险评估机制，对安全加固和防护效果定期进行检查和评估，及时识别和消除风险。
+  c.	在安全管理方面，建议继续加强全体系信息安全工作的整体管理和组织协调，强化人员安全意识，严格落实各项规章制度，继续加强安全开发和上线前安全测试工作，不断提升运维管理水平。
+  `,
         data: {
-          start_date: reportInfo.start_date,
-          end_date: reportInfo.end_date,
-          target_system: reportInfo.target_system,
+          start_date: launchForm.start_date,
+          end_date: launchForm.end_date,
+          target_system: launchForm.target_system,
           risk_total_text: riskTotalText,
           ...riskLevelCount,
         },
@@ -645,7 +652,7 @@ async function generateDocument(scanRes: ScanResultMap[], reportInfo: ReportInfo
                 width: { size: '25%' },
               }),
               new TableCell({
-                children: [baseTableParagraph(reportInfo.start_date)],
+                children: [baseTableParagraph(launchForm.start_date)],
                 width: { size: '25%' },
               }),
               new TableCell({
@@ -653,7 +660,7 @@ async function generateDocument(scanRes: ScanResultMap[], reportInfo: ReportInfo
                 width: { size: '25%' },
               }),
               new TableCell({
-                children: [baseTableParagraph(reportInfo.end_date)],
+                children: [baseTableParagraph(launchForm.end_date)],
                 width: { size: '25%' },
               }),
             ],
@@ -755,7 +762,7 @@ async function generateDocument(scanRes: ScanResultMap[], reportInfo: ReportInfo
         data: [
           {
             index: '1',
-            name: reportInfo.target_system,
+            name: launchForm.target_system,
             result: `超危${riskLevelCount.risk_critical}个\n高危${riskLevelCount.risk_high}个\n中危${riskLevelCount.risk_medium}个\n低危${riskLevelCount.risk_low}个`,
           },
         ],
@@ -808,7 +815,25 @@ async function generateDocument(scanRes: ScanResultMap[], reportInfo: ReportInfo
         },
       }),
       ...generateHighlightParagraph({
-        text: REPORT_TEMPLATE.REFERENCE_TEXT,
+        text: `
+  脉络洞察将参考下列国内、国际及脉络洞察制定的相关标准或规范指导渗透测试工作。
+国内标准、指南或规范：
+《计算机信息系统 安全保护等级划分准则》GB17859-1999
+《信息安全技术 信息安全风险评估规范》GB/T 20984-2007
+《信息安全技术 信息系统灾难恢复规范》GB/T 20988-2007
+《信息安全技术 安全漏洞等级划分指南》GB/T 30279-2020
+《信息安全技术 信息安全风险评估实施指南》GB/T 31509-2015
+《信息安全技术 网络安全等级保护实施指南》GB/T 25058-2019
+《信息安全技术 网络安全等级保护基本要求》GB/T 22239-2019
+《信息安全技术 网络安全等级保护测评要求》GB/T 28448-2019
+《信息技术 安全技术 安全保证框架 第1部分：介绍和概念》ISO/IEC TR 15443-1:2012
+《信息技术 安全技术 安全保证框架 第2部分：分析》ISO/IEC TR 15443-2:2012
+《信息技术 安全技术 运行系统安全评估》ISO/IEC TR 19791:2010
+《信息技术 安全技术 信息安全风险管理》ISO/IEC 27005:2018
+OWASP OWASP_Testing_Guide_v4
+OWASP OWASP_Development_Guide_2005
+OWASP OWASP_Top_10_2021_Chinese
+  `,
       }),
       new Paragraph({
         text: '渗透测试工作说明',
@@ -966,12 +991,16 @@ async function generateDocument(scanRes: ScanResultMap[], reportInfo: ReportInfo
   } as ISectionOptions;
 }
 
-export async function generateWord(scanRes: ScanResultMap[], reportInfo: ReportInfo) {
-  const now = new Date();
-  const filename = `report-${dayJsformat(now, 'YYYYMMDDHHmmss')}`;
+export async function generateWord({
+  scanRes,
+  launchForm,
+}: {
+  scanRes: ScanResultMap[];
+  launchForm: LaunchForm;
+}) {
   const dir = path.join(REPORT_DIR);
   fse.ensureDirSync(dir);
-  const outFile = path.join(dir, `${filename}.docx`);
+  const outFile = path.join(dir, `${launchForm.scan_id}.docx`);
 
   const FONT = undefined;
   const tocStyle = () => {
@@ -1058,9 +1087,9 @@ export async function generateWord(scanRes: ScanResultMap[], reportInfo: ReportI
   };
 
   const [COVER, CATALOG, BODY] = await Promise.all([
-    generateCover(reportInfo),
+    generateCover(launchForm),
     generateCatalog(),
-    generateDocument(scanRes, reportInfo),
+    generateDocument(scanRes, launchForm),
   ]);
 
   const doc = new Document({
