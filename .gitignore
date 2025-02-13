@@ -5,3 +5,4 @@ dist
 vite.config.ts.timestamp-*
 *.tsbuildinfo
 .DS_Store
+docker/docker-compose/conf

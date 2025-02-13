@@ -6,7 +6,7 @@ services:
     restart: always
     volumes:
       - ./data/server/static:/app/static
-      - ./conf:/app/.conf
+      - ./conf:/app/apps/server/.conf
     networks:
       wsc-network-app:
         aliases:

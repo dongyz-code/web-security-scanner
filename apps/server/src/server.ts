@@ -5,7 +5,7 @@ import {
   logger,
   PORT,
   ROOT_SCHEDULE,
-  ROOT_CONF,
+  MEDO_ENV,
 } from './configs/index.js';
 import { getRoutes, callback } from './router/index.js';
 import { tableHealthCheck } from './database/index.js';
@@ -14,7 +14,7 @@ import { IS_AWS, IS_DOCKER } from './configs/index.js';
 console.info('CONF:', {
   IS_AWS,
   IS_DOCKER,
-  MEDO_ENV: ROOT_CONF.MEDO_ENV,
+  MEDO_ENV,
 });
 
 async function createServer() {
