@@ -1,20 +1,15 @@
 import path from 'path';
 import { writeFile } from 'fs/promises';
 import { dayJsformat, REPORT_DIR } from '@/configs/index.js';
-import { WEB_SECURITY_LIBRARY, REPORT_TEMPLATE } from '../constant.js';
 import { arrObject, fse } from '@m170/utils/node';
 import {
   Document,
   Packer,
   Paragraph,
-  Tab,
   TextRun,
   Header,
   TableOfContents,
-  PageNumber,
   AlignmentType,
-  TabStopType,
-  TabStopPosition,
   HeadingLevel,
   Table,
   TableRow,
@@ -22,125 +17,63 @@ import {
   WidthType,
   LevelFormat,
 } from 'docx';
+import {
+  WEB_SECURITY_LIBRARY,
+  REPORT_TEMPLATE,
+  REPORT_DEFAULT_INFO,
+  RISK_LEVEL_MAP,
+  RiskLevel,
+  TOTAL_RISK_LEVEL_MAP,
+} from '../constant.js';
 
 import type { ScanResultMap } from '../type.js';
-import type { FileChild, IParagraphStyleOptions, ISectionOptions, IStylesOptions } from 'docx';
+import type {
+  FileChild,
+  IParagraphOptions,
+  IParagraphStyleOptions,
+  ISectionOptions,
+  IStylesOptions,
+} from 'docx';
+import type { ReportInfo } from '@/types/index.js';
 
 enum SPACING {
   HEADING_SPACING = 480,
   BASE_SPACING = 240,
 }
 
-export enum ReportColor {
+enum ReportColor {
   YELLOW = 'FFC000',
   RED = 'FF0000',
 }
 
-/**
- * 生成封面
- * @returns
- */
-async function generateCover() {
-  const title = 'Web 安全扫描报告';
-  const version = '1.0.0';
-
-  const HOME: ISectionOptions = {
-    /** 首页不算页码 */
-    properties: {
-      titlePage: true,
-      page: {
-        pageNumbers: {
-          start: 0,
-        },
-      },
-    },
-    headers: {
-      /** 首页不显示页码 */
-      first: new Header({
-        children: [
-          new Paragraph({
-            children: [new TextRun({ text: `${title} ${version}` })],
-            thematicBreak: true,
-          }),
-        ],
-      }),
-      default: new Header({
-        children: [
-          new Paragraph({
-            children: [
-              new TextRun({ text: `${title} ${version}` }),
-              new TextRun({
-                children: [new Tab(), PageNumber.CURRENT],
-              }),
-            ],
-            tabStops: [
-              {
-                type: TabStopType.RIGHT,
-                position: TabStopPosition.MAX,
-              },
-            ],
-            thematicBreak: true,
-          }),
-        ],
-      }),
-    },
-    children: [
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: title,
-            size: '24pt',
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: {
-          before: 240 * 15,
-        },
-        style: 'base',
-      }),
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: version,
-            size: '24pt',
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: {
-          before: 120,
-        },
-        style: 'base',
-      }),
-    ],
-  };
-  return HOME;
+enum TEXT_SIZE {
+  BASE = '14pt',
+  H1 = '24pt',
+  H2 = '22pt',
+  H3 = '20pt',
+  H4 = '18pt',
+  H5 = '16pt',
 }
 
-async function generateCatalog() {
-  const CATALOG: ISectionOptions = {
-    children: [
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [
-          new TextRun({
-            text: '目    录',
-            bold: true,
-          }),
-        ],
-        style: 'base',
-        spacing: {
-          before: SPACING.HEADING_SPACING,
-          after: SPACING.HEADING_SPACING,
-        },
-      }),
-      new TableOfContents('目录', {
-        hyperlink: true,
-        // headingStyleRange: '1-2',
-      }),
-    ],
-  };
+/** -------------------------method---------------------------------- */
 
-  return CATALOG;
+function baseParagraph(text: string, option?: IParagraphOptions) {
+  return new Paragraph({
+    text,
+    style: 'base',
+    spacing: {
+      after: SPACING.BASE_SPACING,
+    },
+    ...option,
+  });
+}
+
+function baseTableParagraph(text: string, option?: IParagraphOptions) {
+  return new Paragraph({
+    text,
+    style: 'base',
+    ...option,
+  });
 }
 
 /** 根据text生成段落, 支持变量替换，高亮字段，自动换行 */
@@ -189,7 +122,7 @@ type TableColumn = {
   key: string;
   width: `${number}%`;
 };
-export function generateTable({
+function generateTable({
   columns,
   data,
   showHeader = true,
@@ -239,30 +172,352 @@ export function generateTable({
   return new Table({ rows, width: { size: '100%', type: WidthType.PERCENTAGE } });
 }
 
-export async function generateDocument(scanRes: ScanResultMap[]) {
+/** 根据风险等级统计最终风险级别 */
+function getRiskTotal(riskLevelCount: Record<RiskLevel, number>): RiskLevel {
+  if (riskLevelCount.risk_critical > 0) {
+    return 'risk_critical';
+  }
+  if (riskLevelCount.risk_high > 0 || riskLevelCount.risk_medium > 3) {
+    return 'risk_high';
+  }
+  if (riskLevelCount.risk_medium > 1 || riskLevelCount.risk_low > 5) {
+    return 'risk_medium';
+  }
+  return 'risk_low';
+}
+
+/** -------------------------method---------------------------------- */
+
+/**
+ * 生成封面
+ * @returns
+ */
+async function generateCover({ reportName, version }: ReportInfo) {
+  const HOME: ISectionOptions = {
+    /** 首页不算页码 */
+    properties: {
+      titlePage: true,
+      page: {
+        pageNumbers: {
+          start: 0,
+        },
+      },
+    },
+    headers: {
+      default: new Header({
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: `${reportName} ${version}` })],
+            thematicBreak: true,
+          }),
+        ],
+      }),
+    },
+    children: [
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: reportName,
+            size: TEXT_SIZE.H1,
+            bold: true,
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: SPACING.BASE_SPACING * 25,
+          after: SPACING.HEADING_SPACING,
+        },
+        style: 'base',
+      }),
+
+      new Table({
+        width: { size: '80%', type: WidthType.PERCENTAGE },
+        alignment: AlignmentType.CENTER,
+        style: 'base',
+        rows: [
+          new TableRow({
+            height: { value: '48pt', rule: 'atLeast' },
+
+            children: [
+              new TableCell({
+                verticalAlign: AlignmentType.CENTER,
+                children: [baseTableParagraph('测试时间')],
+                width: { size: '40%' },
+              }),
+              new TableCell({
+                verticalAlign: AlignmentType.CENTER,
+                children: [baseTableParagraph(dayJsformat())],
+                width: { size: '60%' },
+              }),
+            ],
+          }),
+        ],
+      }),
+
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: '文档说明',
+            size: TEXT_SIZE.H5,
+            bold: true,
+          }),
+        ],
+        /** 确保该段落从新页面开始 */
+        pageBreakBefore: true,
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: SPACING.BASE_SPACING,
+          after: SPACING.BASE_SPACING,
+        },
+        style: 'base',
+      }),
+      new Table({
+        width: { size: '100%', type: WidthType.PERCENTAGE },
+        columnWidths: [20, 30, 20, 30],
+        style: 'base',
+        rows: [
+          new TableRow({
+            height: { value: '24pt', rule: 'atLeast' },
+            children: [
+              new TableCell({
+                children: [baseTableParagraph('文档名称')],
+                width: { size: '20%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph(reportName)],
+                width: { size: '30%' },
+                columnSpan: 3,
+              }),
+            ],
+          }),
+          new TableRow({
+            height: { value: '24pt', rule: 'atLeast' },
+            children: [
+              new TableCell({
+                children: [baseTableParagraph('文档管理编号')],
+                width: { size: '20%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph('SFSS-PT-R0001')],
+                width: { size: '30%' },
+                columnSpan: 3,
+              }),
+            ],
+          }),
+          new TableRow({
+            height: { value: '24pt', rule: 'atLeast' },
+            children: [
+              new TableCell({
+                children: [baseTableParagraph('保密级别')],
+                width: { size: '20%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph('商密')],
+                width: { size: '30%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph('文档版本号')],
+                width: { size: '20%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph(version)],
+                width: { size: '30%' },
+              }),
+            ],
+          }),
+          new TableRow({
+            height: { value: '24pt', rule: 'atLeast' },
+            children: [
+              new TableCell({
+                children: [baseTableParagraph('制作人')],
+                width: { size: '20%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph(REPORT_DEFAULT_INFO.REPORT_CREATOR)],
+                width: { size: '30%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph('制作日期')],
+                width: { size: '20%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph(dayJsformat())],
+                width: { size: '30%' },
+              }),
+            ],
+          }),
+          new TableRow({
+            height: { value: '24pt', rule: 'atLeast' },
+            children: [
+              new TableCell({
+                children: [baseTableParagraph('扩散范围')],
+                width: { size: '20%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph('限“脉络慧牍研发组”、脉络安全团队')],
+                width: { size: '30%' },
+                columnSpan: 3,
+              }),
+            ],
+          }),
+          new TableRow({
+            height: { value: '24pt', rule: 'atLeast' },
+            children: [
+              new TableCell({
+                children: [baseTableParagraph('分发控制')],
+                width: { size: '20%' },
+              }),
+              new TableCell({
+                children: [
+                  baseTableParagraph('脉络安全团队：创建、修改、读取。'),
+                  baseTableParagraph('脉络慧牍研发组：读取。'),
+                ],
+                width: { size: '30%' },
+                columnSpan: 3,
+              }),
+            ],
+          }),
+        ],
+      }),
+
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: '版本变更记录',
+            size: TEXT_SIZE.H5,
+            bold: true,
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: SPACING.BASE_SPACING,
+          after: SPACING.BASE_SPACING,
+        },
+        style: 'base',
+      }),
+      generateTable({
+        columns: [
+          { label: '修改日期', key: 'date', width: '25%' },
+          { label: '版本', key: 'version', width: '25%' },
+          { label: '说明', key: 'description', width: '25%' },
+          { label: '修改人', key: 'creator', width: '25%' },
+        ],
+        data: [
+          {
+            date: dayJsformat(),
+            version: version,
+            description: '正式版本',
+            creator: REPORT_DEFAULT_INFO.REPORT_CREATOR,
+          },
+        ],
+      }),
+
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: '适用范围',
+            size: TEXT_SIZE.H5,
+            bold: true,
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: SPACING.BASE_SPACING,
+          after: SPACING.BASE_SPACING,
+        },
+        style: 'base',
+      }),
+      baseParagraph(
+        '本次渗透测试是由脉络安全团队对脉络慧牍系统进行的安全风险深度评估，根据评估结果提交技术报告，用于对该网站系统的作出状况做出安全评估和加固建议，仅限于脉络内部人员传阅。'
+      ),
+      baseParagraph(
+        '本报告结论的有效性建立在被测试单位提供相关证据的真实性基础之上。本报告中给出的评估结论仅对被评估的信息系统当时的安全状态有效，当信息系统发生涉及到的系统构成组件（或子系统）变更时本报告不再适用。'
+      ),
+
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: '版权声明',
+            size: TEXT_SIZE.H5,
+            bold: true,
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: SPACING.BASE_SPACING,
+          after: SPACING.BASE_SPACING,
+        },
+        style: 'base',
+      }),
+      baseParagraph(
+        '本文中出现的任何文字叙述、文档格式、插图、照片、方法、过程等内容，除另有特别注明，版权均属脉络所有，受到有关产权及版权法保护。任何个人、机构未经脉络的书面授权许可，不得以任何方式复制或引用本文的任何片断。'
+      ),
+    ],
+  };
+  return HOME;
+}
+
+async function generateCatalog() {
+  const CATALOG: ISectionOptions = {
+    children: [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [
+          new TextRun({
+            text: '目    录',
+            bold: true,
+          }),
+        ],
+        style: 'base',
+        spacing: {
+          before: SPACING.BASE_SPACING,
+          after: SPACING.BASE_SPACING,
+        },
+      }),
+      new TableOfContents('目录', {
+        hyperlink: true,
+      }),
+    ],
+  };
+
+  return CATALOG;
+}
+
+async function generateDocument(scanRes: ScanResultMap[], reportInfo: ReportInfo) {
   const webSecurityLibrary = arrObject(WEB_SECURITY_LIBRARY, 'v_type');
-  const summaries: Paragraph[] = [];
+  const summaries: { index: string; name: string; result: string }[] = [];
   const details: FileChild[] = [];
 
-  scanRes.forEach((item) => {
-    const { v_type, failCount, failUrls, headers } = item;
+  const riskLevelCount = {
+    risk_total: 0,
+    risk_low: 0,
+    risk_medium: 0,
+    risk_high: 0,
+    risk_critical: 0,
+  };
+
+  const getRiskText = (risk: RiskLevel) => {
+    return RISK_LEVEL_MAP[risk] || risk;
+  };
+
+  scanRes.forEach((item, i) => {
+    const { v_type, failCount, failUrls, errorHeaders, successHeaders } = item;
     const { name, description, risk } = webSecurityLibrary[v_type];
     let status = '通过';
 
     if (failCount > 0) {
       status = '不通过';
-      summaries.push(
-        // new Paragraph({ children: [new TextRun({ text: `${name}` })], style: 'base' })
-        new Paragraph({
-          text: `[${risk}] ${name}`,
-          heading: HeadingLevel.HEADING_2,
-          numbering: {
-            reference: 'catalog',
-            level: 1,
-          },
-        })
-      );
+      riskLevelCount.risk_total++;
+      riskLevelCount[risk] = riskLevelCount[risk] || 0;
+      riskLevelCount[risk]++;
     }
+
+    const riskText = getRiskText(risk);
+    summaries.push({
+      index: `${i + 1}`,
+      name: `${name}`,
+      result: `${status}`,
+    });
 
     const title = `[${status}] ${name}`;
     details.push(
@@ -282,12 +537,16 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
 
     const tableData = [
       {
+        name: '风险级别',
+        description: riskText,
+      },
+      {
         name: '漏洞及风险描述',
         description,
       },
       {
         name: status,
-        description: Object.entries(headers)
+        description: Object.entries(failCount > 0 ? errorHeaders : successHeaders)
           .map(([key, value]) => {
             return `${key}: ${value}`;
           })
@@ -299,24 +558,20 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
       tableData.push({ name: 'URL', description: failUrls.slice(0, 3).join('\n') });
     }
 
-    const tableColumns: TableColumn[] = [
-      { label: '漏洞说明', key: 'name', width: '30%' },
-      { label: '漏洞', key: 'description', width: '70%' },
-    ];
-
     const TableInstance = generateTable({
-      columns: tableColumns,
+      columns: [
+        { label: '漏洞说明', key: 'name', width: '30%' },
+        { label: '漏洞', key: 'description', width: '70%' },
+      ],
       data: tableData,
       showHeader: false,
     });
 
     details.push(TableInstance);
-
-    // Object.entries(headers).forEach(([key, value]) => {
-    //   header.push({ text: key });
-    //   header.push({ text: value });
-    // });
   });
+
+  const riskTotal = getRiskTotal(riskLevelCount);
+  const riskTotalText = `本次安全测试综合风险评级：${TOTAL_RISK_LEVEL_MAP[riskTotal]}`;
 
   return {
     properties: {},
@@ -332,16 +587,137 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
       ...generateHighlightParagraph({
         text: REPORT_TEMPLATE.SUMMARY_TEXT,
         data: {
-          start_date: '2025-01-01',
-          end_date: '2025-01-01',
-          target_system: 'XXX系统',
-          risk_total: 10,
-          risk_high: 1,
-          risk_medium: 2,
-          risk_low: 3,
-          risk_info: 4,
+          start_date: reportInfo.start_date,
+          end_date: reportInfo.end_date,
+          target_system: reportInfo.target_system,
+          risk_total_text: riskTotalText,
+          ...riskLevelCount,
         },
-        highlight: ['本次安全测试综合风险评级：低风险'],
+        highlight: [`${riskTotalText}`],
+      }),
+
+      new Paragraph({
+        text: '渗透测试说明',
+        heading: HeadingLevel.HEADING_1,
+        numbering: {
+          reference: 'catalog',
+          level: 0,
+        },
+        spacing: {
+          after: SPACING.HEADING_SPACING,
+          before: SPACING.HEADING_SPACING,
+        },
+      }),
+      new Paragraph({
+        text: '测试时间',
+        heading: HeadingLevel.HEADING_2,
+        numbering: {
+          reference: 'catalog',
+          level: 1,
+        },
+        spacing: {
+          after: SPACING.HEADING_SPACING,
+        },
+      }),
+      baseParagraph('本次渗透测试按照事先约定规避风险的时间段开展，如下所示：'),
+
+      new Table({
+        width: { size: '100%' },
+        style: 'base',
+        alignment: 'center',
+        rows: [
+          new TableRow({
+            tableHeader: true,
+            height: { value: '24pt', rule: 'atLeast' },
+            children: [
+              new TableCell({
+                children: [baseTableParagraph('测试工作时间段', { alignment: 'center' })],
+                columnSpan: 4,
+                verticalAlign: 'center',
+              }),
+            ],
+          }),
+          new TableRow({
+            height: { value: '24pt', rule: 'atLeast' },
+            children: [
+              new TableCell({
+                children: [baseTableParagraph('开始时间')],
+                width: { size: '25%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph(reportInfo.start_date)],
+                width: { size: '25%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph('结束时间')],
+                width: { size: '25%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph(reportInfo.end_date)],
+                width: { size: '25%' },
+              }),
+            ],
+          }),
+        ],
+      }),
+
+      new Paragraph({
+        text: '测试人员',
+        heading: HeadingLevel.HEADING_2,
+        numbering: {
+          reference: 'catalog',
+          level: 1,
+        },
+        spacing: {
+          after: SPACING.HEADING_SPACING,
+          before: SPACING.HEADING_SPACING,
+        },
+      }),
+      baseParagraph('本次渗透测试实施人员，如下所示：'),
+      new Table({
+        width: { size: '100%' },
+        style: 'base',
+        rows: [
+          new TableRow({
+            tableHeader: true,
+            height: { value: '24pt', rule: 'atLeast' },
+            children: [
+              new TableCell({
+                children: [baseTableParagraph('测试人员名单', { alignment: 'center' })],
+                columnSpan: 6,
+              }),
+            ],
+          }),
+          new TableRow({
+            height: { value: '24pt', rule: 'atLeast' },
+            children: [
+              new TableCell({
+                children: [baseTableParagraph('姓名')],
+                width: { size: '16.67%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph(' ')],
+                width: { size: '16.67%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph('测试IP')],
+                width: { size: '16.67%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph('')],
+                width: { size: '16.67%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph('联系方式')],
+                width: { size: '16.67%' },
+              }),
+              new TableCell({
+                children: [baseTableParagraph('')],
+                width: { size: '16.67%' },
+              }),
+            ],
+          }),
+        ],
       }),
 
       new Paragraph({
@@ -356,7 +732,56 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
           before: SPACING.HEADING_SPACING,
         },
       }),
-      ...summaries,
+      new Paragraph({
+        text: '风险总览',
+        heading: HeadingLevel.HEADING_2,
+        numbering: {
+          reference: 'catalog',
+          level: 1,
+        },
+        spacing: {
+          after: SPACING.HEADING_SPACING,
+        },
+      }),
+
+      baseParagraph('本次渗透测试共发现漏洞如下：'),
+
+      generateTable({
+        columns: [
+          { label: '编号', key: 'index', width: '20%' },
+          { label: '应用系统名称', key: 'name', width: '40%' },
+          { label: '结果', key: 'result', width: '40%' },
+        ],
+        data: [
+          {
+            index: '1',
+            name: reportInfo.target_system,
+            result: `超危${riskLevelCount.risk_critical}个\n高危${riskLevelCount.risk_high}个\n中危${riskLevelCount.risk_medium}个\n低危${riskLevelCount.risk_low}个`,
+          },
+        ],
+      }),
+
+      new Paragraph({
+        text: '漏洞概况',
+        heading: HeadingLevel.HEADING_2,
+        numbering: {
+          reference: 'catalog',
+          level: 1,
+        },
+        spacing: {
+          after: SPACING.HEADING_SPACING,
+        },
+      }),
+      baseParagraph('本次渗透测试主要覆盖的漏洞摘要如下表所示：'),
+      generateTable({
+        columns: [
+          { label: '编号', key: 'index', width: '10%' },
+          { label: '测试用例', key: 'name', width: '70%' },
+          { label: '结果', key: 'result', width: '20%' },
+        ],
+        data: summaries,
+      }),
+
       new Paragraph({
         text: '测试用例',
         heading: HeadingLevel.HEADING_1,
@@ -408,9 +833,9 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
           after: SPACING.HEADING_SPACING,
         },
       }),
-      new Paragraph({
-        text: '脉络洞察安全服务团队的攻击和渗透方法是对测试范围内的资产进行全面，可重复和可审计的评估。这种测试方法通过模拟黑客入侵的方式识别Web应用程序相关的安全漏洞，并提供解决此类漏洞的建议。渗透测试通过以下七个步骤进行：',
-      }),
+      baseParagraph(
+        '脉络洞察安全服务团队的攻击和渗透方法是对测试范围内的资产进行全面，可重复和可审计的评估。这种测试方法通过模拟黑客入侵的方式识别Web应用程序相关的安全漏洞，并提供解决此类漏洞的建议。渗透测试通过以下七个步骤进行：'
+      ),
       generateTable({
         columns: [
           { label: '编号', key: 'index', width: '10%' },
@@ -438,12 +863,13 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
           after: SPACING.HEADING_SPACING,
         },
       }),
-      new Paragraph({
-        text: '脉络洞察安全服务团队对漏洞评级依照《信息安全技术-网络安全漏洞分类分级指南 GB/T 30279-2020》进行，从访问路径、触发要求、权限需求、交互条件、保密性影响程度、完整性影响程度、可用性影响程度七个维度进行技术赋值，按照标准要求计算出漏洞技术分级结果，共包含：超危、高危、中危、低危四个漏洞评级。',
-      }),
-      new Paragraph({
-        text: '漏洞评级详情请参考《信息安全技术-网络安全漏洞分类分级指南 GB/T 30279-2020》。',
-      }),
+      baseParagraph(
+        '脉络洞察安全服务团队对漏洞评级依照《信息安全技术-网络安全漏洞分类分级指南 GB/T 30279-2020》进行，从访问路径、触发要求、权限需求、交互条件、保密性影响程度、完整性影响程度、可用性影响程度七个维度进行技术赋值，按照标准要求计算出漏洞技术分级结果，共包含：超危、高危、中危、低危四个漏洞评级。'
+      ),
+      baseParagraph(
+        '漏洞评级详情请参考《信息安全技术-网络安全漏洞分类分级指南 GB/T 30279-2020》。'
+      ),
+
       new Paragraph({
         text: '综合风险评级标准',
         heading: HeadingLevel.HEADING_2,
@@ -462,8 +888,8 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
           { label: '说明', key: 'description', width: '70%' },
         ],
         data: [
-          { level: '高风险', description: '存在1个及以上高危漏洞，或3个以上中危漏洞的系统' },
-          { level: '中风险', description: '存在1个到3个中危漏洞，或5个以上低危漏洞的系统' },
+          { level: '高高危', description: '存在1个及以上高危漏洞，或3个以上中危漏洞的系统' },
+          { level: '中危险', description: '存在1个到3个中危漏洞，或5个以上低危漏洞的系统' },
           { level: '低风险', description: '存在5个及以内低危漏洞，或未检测到漏洞的系统' },
         ],
       }),
@@ -479,12 +905,12 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
           after: SPACING.HEADING_SPACING,
         },
       }),
-      new Paragraph({
-        text: '我们的测试方法需要使用商业扫描工具和开源/免费软件渗透测试工具。用于测试的工具（包括且不限）NMAP、Goby、SQLMAP、Wireshark、Metasploit等 ',
-      }),
-      new Paragraph({
-        text: '在实施渗透的过程中，XXX安全服务团队会根据业务系统场景的不同，使用符合场景的脚本用于自动化测试。',
-      }),
+      baseParagraph(
+        '我们的测试方法需要使用商业扫描工具和开源/免费软件渗透测试工具。用于测试的工具（包括且不限）NMAP、Goby、SQLMAP、Wireshark、Metasploit等'
+      ),
+      baseParagraph(
+        `在实施渗透的过程中，${REPORT_DEFAULT_INFO.REPORT_CREATOR}会根据业务系统场景的不同，使用符合场景的脚本用于自动化测试。`
+      ),
       new Paragraph({
         text: '修复建议说明',
         heading: HeadingLevel.HEADING_2,
@@ -498,7 +924,10 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
         },
       }),
       new Paragraph({
-        text: '脉络洞察在本文档中提供的各项修复建议均为基于漏洞的原理性分析修复方案或应用厂商提供的通用性方案，脉络洞察无法完全了解系统研发详情，无法判断实际修复动作可能对业务造成的影响，对应建议仅供漏洞修复参考。',
+        text: '脉络洞察在本文档中提供的各项修复建议均为基于漏洞的原理性分析修复方案或应用厂商提供的通用性方案。',
+        spacing: {
+          after: SPACING.BASE_SPACING,
+        },
       }),
       new Paragraph({
         text: '脉络洞察建议客户在测试环境中进行漏洞修复的验证工作或在修复前做好备份，避免修复过程中因非预期的问题导致业务受到影响。',
@@ -533,26 +962,11 @@ export async function generateDocument(scanRes: ScanResultMap[]) {
       new Paragraph({
         text: '您可以通过邮件对我们的测试提供反馈，您的宝贵意见将是我们改善工作的方向和服务的动力，我们定会认真对待，切实改进，在此对您的支持和帮助表示感谢！',
       }),
-      new Paragraph({
-        text: '了解更多',
-        heading: HeadingLevel.HEADING_1,
-        numbering: {
-          reference: 'catalog',
-          level: 0,
-        },
-        spacing: {
-          before: SPACING.HEADING_SPACING,
-          after: SPACING.HEADING_SPACING,
-        },
-      }),
-      new Paragraph({
-        text: '了解更多安全信息，或关于本文出现的漏洞、攻击方式等详细介绍与建议，可查看XXX安全中心的威胁维基或关注XXX科技公众号了解最新的安全情报。',
-      }),
     ],
   } as ISectionOptions;
 }
 
-export async function generateWord(scanRes: ScanResultMap[]) {
+export async function generateWord(scanRes: ScanResultMap[], reportInfo: ReportInfo) {
   const now = new Date();
   const filename = `report-${dayJsformat(now, 'YYYYMMDDHHmmss')}`;
   const dir = path.join(REPORT_DIR);
@@ -575,12 +989,12 @@ export async function generateWord(scanRes: ScanResultMap[]) {
             line: 360,
           },
           indent: {
-            firstLine: 480 * i,
+            firstLine: 480 * (i + 1),
           },
         },
         run: {
           font: FONT,
-          size: '12pt',
+          size: '10pt',
         },
       });
     }
@@ -635,7 +1049,7 @@ export async function generateWord(scanRes: ScanResultMap[]) {
           },
         },
         run: {
-          size: '10pt',
+          size: '12pt',
           font: FONT,
         },
       },
@@ -644,13 +1058,13 @@ export async function generateWord(scanRes: ScanResultMap[]) {
   };
 
   const [COVER, CATALOG, BODY] = await Promise.all([
-    generateCover(),
+    generateCover(reportInfo),
     generateCatalog(),
-    generateDocument(scanRes),
+    generateDocument(scanRes, reportInfo),
   ]);
 
   const doc = new Document({
-    creator: '脉络洞察',
+    creator: REPORT_DEFAULT_INFO.REPORT_CREATOR,
     styles,
     features: {
       updateFields: true,

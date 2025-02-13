@@ -8,6 +8,7 @@ import { checkHeaders } from './check.js';
 import { generateWord } from './report.js';
 
 import type { LaunchForm } from '@/types/index.js';
+import { handleRecord } from './record.js';
 
 /**
  * 路由扫描
@@ -20,13 +21,11 @@ import type { LaunchForm } from '@/types/index.js';
 
 export async function launchWebBrowser({
   target,
-  maxDepth,
-  scanSubdomain,
-  scanSpeed = 5,
-  excludePath,
+  scanSpeed = 10,
   headers = {},
-  cookies = {},
   localStorages = [],
+  recordJson,
+  reportInfo,
 }: LaunchForm) {
   /** 收集的网站路径 */
   const urls: string[] = [];
@@ -39,21 +38,16 @@ export async function launchWebBrowser({
       failCount: number;
       passUrls: string[];
       failUrls: string[];
-      headers: Record<string, string>;
+      successHeaders: Record<string, string>;
+      errorHeaders: Record<string, string>;
     }
   > = {};
   /** url去重 */
   const urlFilter = new BloomFilter(10000, 0.01);
-  /** 已经扫描的url */
-  const scannedFilter = new BloomFilter(10000, 0.01);
   /** 去掉target末尾的/ */
   target = target.replace(/\/$/, '');
   urlFilter.add(target);
-  scannedFilter.add(target);
   urls.push(target);
-
-  /** 图片占位图，替换实际图片 */
-  const imagePlaceholder = await fse.readFile(join(STATIC_DATA_DIR, 'assets/placeholder.png'));
 
   /** 启动浏览器 */
   const cluster = await getClusterLaunch({ maxConcurrency: scanSpeed });
@@ -72,31 +66,17 @@ export async function launchWebBrowser({
       });
     }, localStorages);
 
-    /** 设置cookies */
-    // await page.setCookie(...Object.entries(cookies).map(([name, value]) => ({ name, value, domain: target })));
-
     /** 监听请求 */
     page.on('request', async (request) => {
-      // console.log('response', request.url());
-      /** 拦截图片请求, 返回假的图片资源 */
-
-      if (request.resourceType() === 'image') {
-        request.respond({
-          contentType: 'image/png',
-          body: Buffer.from(imagePlaceholder),
-        });
-      } else {
-        request.continue();
-      }
+      request.continue();
     });
 
     page.on('response', async (response) => {
       const url = response.url();
-      if (!parseLink(url, target)) {
+      if (!parseLink(url, target, urlFilter)) {
         return;
       }
 
-      console.log('url', url);
       const checks = await checkHeaders(response);
       checks.forEach((check) => {
         const { v_type, pass, url } = check;
@@ -108,17 +88,21 @@ export async function launchWebBrowser({
             failCount: 0,
             passUrls: [],
             failUrls: [],
-            headers: {},
+            successHeaders: {},
+            errorHeaders: {},
           };
         }
 
-        scanResultMap[v_type].headers = response.headers();
+        const headers = response.headers();
+
         if (pass) {
           scanResultMap[v_type].passUrls.push(url);
           scanResultMap[v_type].passCount++;
+          scanResultMap[v_type].successHeaders = headers;
         } else {
           scanResultMap[v_type].failUrls.push(url);
           scanResultMap[v_type].failCount++;
+          scanResultMap[v_type].errorHeaders = headers;
         }
       });
     });
@@ -127,18 +111,22 @@ export async function launchWebBrowser({
       dialog.dismiss();
     });
 
-    await page.goto(target, {
-      timeout: 60 * 1000,
-      /** 等待网络连接在500ms没有超过两个请求 */
-      waitUntil: 'networkidle2',
-    });
+    if (recordJson) {
+      await handleRecord(page, recordJson);
+    } else {
+      await page.goto(target, {
+        timeout: 60 * 1000,
+        /** 等待网络连接在500ms没有超过两个请求 */
+        waitUntil: 'networkidle2',
+      });
+    }
 
-    const links = await page.$$eval(
-      '[src],[href],[action],[data-url],[longDesc],[lowsrc]',
-      getPageSrcAndHref
-    );
+    // const links = await page.$$eval(
+    //   '[src],[href],[action],[data-url],[longDesc],[lowsrc]',
+    //   getPageSrcAndHref
+    // );
 
-    const validLinks = filterLinks(links, target, urlFilter);
+    // const validLinks = filterLinks(links, target, urlFilter);
   });
 
   cluster.on('taskerror', (err) => {
@@ -149,7 +137,8 @@ export async function launchWebBrowser({
 
   await cluster.idle();
 
-  await generateWord(Object.values(scanResultMap));
+  // console.log('scanResultMap', scanResultMap);
+  await generateWord(Object.values(scanResultMap), reportInfo);
 
   await cluster.close();
 }

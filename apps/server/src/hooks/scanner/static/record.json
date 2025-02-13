@@ -1,0 +1,220 @@
+{
+  "title": "2025/2/12 15:42:42 录制的内容",
+  "steps": [
+    {
+      "type": "setViewport",
+      "width": 1903,
+      "height": 464,
+      "deviceScaleFactor": 1,
+      "isMobile": false,
+      "hasTouch": false,
+      "isLandscape": false
+    },
+    {
+      "type": "navigate",
+      "url": "https://p-gsk-kyc-qa.medomino.com/s-login",
+      "assertedEvents": [
+        {
+          "type": "navigation",
+          "url": "https://p-gsk-kyc-qa.medomino.com/s-login",
+          "title": "登录"
+        }
+      ]
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["aria/用户名"],
+        ["#el-id-7578-1"],
+        ["xpath///*[@id=\"el-id-7578-1\"]"],
+        ["pierce/#el-id-7578-1"]
+      ],
+      "offsetY": 12,
+      "offsetX": 109.5
+    },
+    {
+      "type": "change",
+      "value": "hzz32676",
+      "selectors": [
+        ["aria/用户名"],
+        ["#el-id-7578-1"],
+        ["xpath///*[@id=\"el-id-7578-1\"]"],
+        ["pierce/#el-id-7578-1"]
+      ],
+      "target": "main"
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["aria/密码"],
+        ["#el-id-7578-2"],
+        ["xpath///*[@id=\"el-id-7578-2\"]"],
+        ["pierce/#el-id-7578-2"]
+      ],
+      "offsetY": 10,
+      "offsetX": 47.5
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyUp",
+      "key": "Shift",
+      "target": "main"
+    },
+    {
+      "type": "keyDown",
+      "target": "main",
+      "key": "Shift"
+    },
+    {
+      "type": "keyUp",
+      "key": "Shift",
+      "target": "main"
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["aria/密码"],
+        ["#el-id-7578-2"],
+        ["xpath///*[@id=\"el-id-7578-2\"]"],
+        ["pierce/#el-id-7578-2"]
+      ],
+      "offsetY": 26,
+      "offsetX": 9.5
+    },
+    {
+      "type": "change",
+      "value": "medomino@",
+      "selectors": [
+        ["aria/密码"],
+        ["#el-id-7578-2"],
+        ["xpath///*[@id=\"el-id-7578-2\"]"],
+        ["pierce/#el-id-7578-2"]
+      ],
+      "target": "main"
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [
+        ["aria/登录"],
+        ["button"],
+        ["xpath///*[@id=\"app\"]/div[2]/div/div/div[4]/button"],
+        ["pierce/button"]
+      ],
+      "offsetY": 8,
+      "offsetX": 88.5
+    }
+  ]
+}

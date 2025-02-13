@@ -47,11 +47,15 @@ export function getPageSrcAndHref(elements: Element[]) {
   return result;
 }
 
-export function parseLink(link: string, origin: string) {
+export function parseLink(link: string, origin: string, urlFilter: BloomFilter) {
   const { hostname, pathname } = parse(link);
 
   //排除根目录情况
   if (pathname == '/' || pathname == '#' || pathname == '/#') {
+    return false;
+  }
+
+  if (pathname?.startsWith('data:')) {
     return false;
   }
 
@@ -76,6 +80,12 @@ export function parseLink(link: string, origin: string) {
     return false;
   }
 
+  if (urlFilter.has(link)) {
+    return false;
+  }
+
+  urlFilter.add(link);
+
   return link;
 }
 
@@ -84,15 +94,10 @@ export function filterLinks(links: string[], origin: string, urlFilter: BloomFil
   const result: string[] = [];
 
   for (let i = 0; i < links.length; i++) {
-    const link = parseLink(links[i], origin);
+    const link = parseLink(links[i], origin, urlFilter);
 
     if (!link) {
       continue;
-    }
-
-    if (!urlFilter.has(link)) {
-      result.push(link);
-      urlFilter.add(link);
     }
   }
 

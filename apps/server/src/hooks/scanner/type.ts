@@ -10,7 +10,8 @@ export type ScanResultMap = {
   failCount: number;
   passUrls: string[];
   failUrls: string[];
-  headers: Record<string, string>;
+  successHeaders: Record<string, string>;
+  errorHeaders: Record<string, string>;
 };
 
 export function helperDocxOptions<T extends undefined | readonly any[]>(data: T) {

@@ -1,20 +1,19 @@
-import { launchWebBrowser } from './methods/route-scan.js';
+import { fse } from '@m170/utils/node';
+import { launchWebBrowser } from './methods/scanner.js';
 
 launchWebBrowser({
   scanId: 'KoXo9898',
   target: 'https://p-gsk-kyc-qa.medomino.com',
-  headers: {
-    Signature: 'signature',
-    Token:
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Imh6ejMyNjc2IiwidXNlcl9pZCI6IjBiYzQ2NjFjZThmODViMjg0ZmIwNGIxNGJhNmQ1YmY4IiwiaXNBWiI6ZmFsc2UsImlhdCI6MTczODk5Mzk4MCwiZXhwIjoxNzM5MDM3MTgwfQ.yZu-26QGeJpx4HU2aHcAkLAXbwNWyLpFJd9dkbH7YW0',
+  /** 浏览器录制信息 */
+  recordJson: fse.readJSONSync('./static/record.json'),
+  reportInfo: {
+    reportId: 'OPOEE',
+    reportName: '脉络洞察渗透测试报告',
+    version: 'V1.0',
+    target_system: 'GSK',
+    start_date: '2025-01-01',
+    end_date: '2025-01-01',
   },
-  localStorages: [
-    {
-      name: 'token',
-      value:
-        '{"data":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Imh6ejMyNjc2IiwidXNlcl9pZCI6IjBiYzQ2NjFjZThmODViMjg0ZmIwNGIxNGJhNmQ1YmY4IiwiaXNBWiI6ZmFsc2UsImlhdCI6MTczODk5Mzk4MCwiZXhwIjoxNzM5MDM3MTgwfQ.yZu-26QGeJpx4HU2aHcAkLAXbwNWyLpFJd9dkbH7YW0"}',
-    },
-  ],
 })
   .then((res) => {
     console.log('res', res);
