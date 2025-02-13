@@ -34,7 +34,6 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
 `,
     validate: (response: HTTPResponse) => {
       const headers = response.headers();
-      console.log('headers[strict-transport-security]', headers['strict-transport-security']);
       return !!headers['strict-transport-security'];
     },
   },

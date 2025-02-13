@@ -35,12 +35,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { api } from '@/plugins/axios';
+import { api, axiosRaw } from '@/plugins/axios';
 import { ScanListResult, LaunchForm } from '@/types';
 import { dayJsformat } from '@m170/utils/common';
 
 import Edit from './components/edit.vue';
 import { ElMessage } from 'element-plus';
+import { downloadBlob } from '@/utils';
 
 const editVisible = ref(false);
 
@@ -50,7 +51,7 @@ async function getList() {
   try {
     const res = await api('/main/scan-list', {});
     data.value = res.list;
-  } catch (error) {
+  } catch (error: any) {
     ElMessage.error(error.message || '获取扫描列表失败');
     console.error(error);
   }
@@ -61,14 +62,24 @@ function handleCreate() {
 }
 
 async function handleDownload(row: ScanListResult) {
-  // const res = await api('/main/download-report', { scan_id: row.scan_id });
-  // console.log(res);
+  const { data: buffer, headers } = await axiosRaw({
+    method: 'POST',
+    url: '/main/download-report',
+    responseType: 'blob',
+    data: {
+      scan_id: row.scan_id,
+    },
+  });
 
+  const contentType = headers['content-type'];
 
+  const blob = new Blob([buffer], {
+    type: contentType,
+  });
+  downloadBlob(blob, `${row.report_name}.docx`);
 }
 
 onMounted(getList);
 </script>
 
 <style lang="postcss" scoped></style>
-

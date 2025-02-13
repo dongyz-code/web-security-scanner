@@ -1,6 +1,7 @@
 import { getAxios } from '@m170/utils/browser';
 import { AxiosError } from 'axios';
 import { ElMessage } from 'element-plus';
+import axios from 'axios';
 
 import type { API } from '@/types';
 import type { AxiosResponse } from 'axios';
@@ -75,4 +76,9 @@ export const { api } = getAxios<API>({
       }
     );
   },
+});
+
+export const axiosRaw = axios.create({
+  baseURL: API_BASE + prefix,
+  timeout: 10000,
 });

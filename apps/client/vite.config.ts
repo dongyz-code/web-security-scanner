@@ -26,5 +26,5 @@ export default defineConfig({
   build: {
     target: 'es2020',
   },
-  plugins: [vueJsx(), vue(), tailwindcss()],
+  plugins: [tailwindcss(), vueJsx(), vue()],
 });

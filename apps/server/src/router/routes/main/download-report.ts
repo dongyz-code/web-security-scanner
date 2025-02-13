@@ -18,10 +18,15 @@ const index: API = {
       throw new Error('report not found');
     }
 
-    reply.header('Content-Disposition', `attachment; filename="${scan_id}.docx"`);
-    reply.header('Content-Type', 'application/octet-stream');
-    reply.header('Content-Length', (await fse.stat(filepath)).size);
-    reply.send(fse.createReadStream(filepath));
+    // docx header
+    reply
+      .header('Content-Disposition', `attachment; filename=${scan_id}.docx`)
+      .header(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      )
+      .header('Content-Length', (await fse.stat(filepath)).size)
+      .send(await fse.readFile(filepath));
   },
 };
 
