@@ -191,7 +191,7 @@ function getRiskTotal(riskLevelCount: Record<RiskLevel, number>): RiskLevel {
  * 生成封面
  * @returns
  */
-async function generateCover({ report_name, version }: LaunchForm) {
+async function generateCover({ report_name, version, target_system }: LaunchForm) {
   const HOME: ISectionOptions = {
     /** 首页不算页码 */
     properties: {
@@ -427,7 +427,7 @@ async function generateCover({ report_name, version }: LaunchForm) {
         style: 'base',
       }),
       baseParagraph(
-        '本次渗透测试是由脉络安全团队对脉络慧牍系统进行的安全风险深度评估，根据评估结果提交技术报告，用于对该网站系统的作出状况做出安全评估和加固建议，仅限于脉络内部人员传阅。'
+        `本次渗透测试是由脉络安全团队对${target_system}进行的安全风险深度评估，根据评估结果提交技术报告，用于对该网站系统的作出状况做出安全评估和加固建议，仅限于脉络内部人员传阅。`
       ),
       baseParagraph(
         '本报告结论的有效性建立在被测试单位提供相关证据的真实性基础之上。本报告中给出的评估结论仅对被评估的信息系统当时的安全状态有效，当信息系统发生涉及到的系统构成组件（或子系统）变更时本报告不再适用。'
@@ -1001,6 +1001,10 @@ export async function generateWord({
   const dir = path.join(REPORT_DIR);
   fse.ensureDirSync(dir);
   const outFile = path.join(dir, `${launchForm.scan_id}.docx`);
+
+  /** 一些默认值 */
+  launchForm.version = launchForm.version || REPORT_DEFAULT_INFO.REPORT_VERSION;
+  launchForm.report_name = launchForm.report_name || REPORT_DEFAULT_INFO.REPORT_NAME;
 
   const FONT = undefined;
   const tocStyle = () => {

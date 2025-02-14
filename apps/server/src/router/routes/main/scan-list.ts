@@ -23,6 +23,9 @@ const index: API = {
           'create_time',
           'timestamp',
         ],
+        suffix: {
+          sql: 'ORDER BY create_time DESC',
+        },
       }),
       pgsql.query<{ count: string }>('SELECT COUNT(*) FROM ??', [tables.scan_record]),
     ]);
